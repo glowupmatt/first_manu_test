@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .upload-form {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .flash-messages {
+            margin: 10px 0;
+        }
+        .flash-message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .success {
+          background-color: #d4edda;
+          color: #155724;
+      }
+      .error {
+          background-color: #f8d7da;
+          color: #721c24;
+      }
+      .toggle-container {
+          display: flex;
+          align-items: center;
+          margin: 10px 0;
+      }
+      
+      .toggle {
+          position: relative;
+          display: inline-block;
+          width: 60px;
+          height: 34px;
+          margin-right: 10px;
+      }
+      
+      .toggle input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+      }
+      
+      .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #ccc;
+          transition: .4s;
+          border-radius: 34px;
+      }
+      
+      .slider:before {
+          position: absolute;
+          content: "";
+          height: 26px;
+          width: 26px;
+          left: 4px;
+          bottom: 4px;
+          background-color: white;
+          transition: .4s;
+          border-radius: 50%;
+      }
+      
+      input:checked + .slider {
+          background-color: #4CAF50;
+      }
+      
+      input:checked + .slider:before {
+          transform: translateX(26px);
+      }
+      
+      .main-song {
+          background-color: #e7f3ff;
+          border-left: 4px solid #4285f4;
+          padding-left: 15px;
+      }
+      
+      /* Styles for playback controls */
+      .playback-controls {
+          margin-top: 30px;
+          padding: 20px;
+          background-color: #f5f5f5;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      
+      .playback-controls .btn {
+          margin-right: 10px;
+          margin-bottom: 15px;
+      }
+      
+      .playback-controls input[type="range"] {
+          width: 100%;
+          max-width: 300px;
+      }
+      
+      #stop-all-btn {
+          background-color: #dc3545;
+      }
+      
+      .track-controls {
+        display: flex;
+        align-items: center;
+        margin: 10px 0;
+    }
+    
+    .delete-btn {
+        background-color: #dc3545;
+        color: white;
+        padding: 5px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: auto;
+    }
+    
+    .delete-btn:hover {
+        background-color: #c82333;
+    }
+    
+    .audio-processing-controls {
+        margin-top: 15px;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+    }
+    
+    .sync-btn, .apply-pitch-btn {
+        background-color: #4CAF50;
+        color: white;
+        padding: 5px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+    }
+    
+    .sync-btn:hover, .apply-pitch-btn:hover {
+        background-color: #45a049;
+    }
+    
+    .pitch-control {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .pitch-control label {
+        margin-right: 10px;
+    }
+    
+    .pitch-control input[type="range"] {
+        width: 150px;
+        margin-right: 10px;
+    }
+    </style>
+</head>
+<body>
+  <h1>Audio Upload</h1>
+  
+  {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+          <div class="flash-messages">
+              {% for category, message in messages %}
+                  <div class="flash-message {{ category }}">{{ message }}</div>
+              {% endfor %}
+          </div>
+      {% endif %}
+  {% endwith %}
+  
+  <div class="upload-form">
+      <form action="{{ url_for('upload_audio') }}" method="POST" enctype="multipart/form-data">
+          <div class="form-group">
+              <label for="audio_file">Select Audio File:</label>
+              <input type="file" id="audio_file" name="audio_file" accept="audio/*" required>
+              <small>Supported formats: MP3, WAV, OGG, FLAC, M4A</small>
+          </div>
+          
+          <div class="form-group">
+              <label for="title">Title:</label>
+              <input type="text" id="title" name="title" placeholder="Enter a title for your audio">
+          </div>
+          
+          <div class="form-group">
+              <label for="description">Description (optional):</label>
+              <textarea id="description" name="description" rows="3" placeholder="Enter a description"></textarea>
+          </div>
+          
+          <button type="submit" class="btn">Upload</button>
+      </form>
+  </div>
+
+  {% if audio_files %}
+      <h2>Uploaded Audio Files</h2>
+      <ul id="audio-list">
+          {% for audio in audio_files %}
+              <li class="audio-item {% if audio.is_main %}main-song{% endif %}" data-filename="{{ audio.filename }}">
+                  <div class="track-controls">
+                      <div class="toggle-container">
+                          <label class="toggle">
+                              <input type="checkbox" class="main-toggle" {% if audio.is_main %}checked{% endif %} 
+                                     onchange="setMainSong('{{ audio.filename }}')">
+                              <span class="slider"></span>
+                          </label>
+                          <span>Set as main track</span>
+                      </div>
+                      <button class="delete-btn" onclick="deleteTrack('{{ audio.filename }}')">Delete</button>
+                  </div>
+                  <h3>{{ audio.title }}</h3>
+                  {% if audio.description %}<p>{{ audio.description }}</p>{% endif %}
+                  <audio controls>
+                      <source src="{{ url_for('static', filename='uploads/' + audio.filename) }}" type="audio/{{ audio.filename.split('.')[-1] }}">
+                      Your browser does not support the audio element.
+                  </audio>
+                  
+                  <!-- Add audio processing controls -->
+                  <div class="audio-processing-controls">
+                      {% if not audio.is_main %}
+                      <button class="sync-btn" onclick="syncToMain('{{ audio.filename }}')">Sync to Main Track</button>
+                      {% endif %}
+                      
+                      <div class="pitch-control">
+                          <label for="pitch-{{ loop.index }}">Pitch Adjustment (semitones):</label>
+                          <input type="range" id="pitch-{{ loop.index }}" min="-12" max="12" value="0" step="1" 
+                                 oninput="updatePitchValue('{{ loop.index }}')">
+                          <span id="pitch-value-{{ loop.index }}">0</span>
+                          <button class="apply-pitch-btn" onclick="adjustPitch('{{ audio.filename }}', '{{ loop.index }}')">Apply</button>
+                      </div>
+                  </div>
+              </li>
+          {% endfor %}
+      </ul>
+
+      <!-- Add multi-track playback controls -->
+      {% if audio_files|length > 1 %}
+      <div class="playback-controls">
+          <h2>Multi-track Playback</h2>
+          <button id="play-all-btn" class="btn">Play All Tracks Together</button>
+          <button id="stop-all-btn" class="btn">Stop All</button>
+          <div class="form-group">
+              <label for="volume-main">Main Track Volume:</label>
+              <input type="range" id="volume-main" min="0" max="1" step="0.1" value="1">
+          </div>
+          <div class="form-group">
+              <label for="volume-others">Other Tracks Volume:</label>
+              <input type="range" id="volume-others" min="0" max="1" step="0.1" value="0.7">
+          </div>
+      </div>
+      {% endif %}
+
+      <script>
+          function setMainSong(filename) {
+              // Deselect all other toggles
+              const toggles = document.querySelectorAll('.main-toggle');
+              toggles.forEach(toggle => {
+                  if (toggle.parentElement.parentElement.parentElement.dataset.filename !== filename) {
+                      toggle.checked = false;
+                  }
+              });
+              
+              // Remove main-song class from all items
+              const items = document.querySelectorAll('.audio-item');
+              items.forEach(item => {
+                  item.classList.remove('main-song');
+                  if (item.dataset.filename === filename) {
+                      item.classList.add('main-song');
+                  }
+              });
+              
+              // Send the selection to the server via fetch API
+              fetch('/set_main_song', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                      filename: filename
+                  })
+              })
+              .then(response => response.json())
+              .then(data => {
+                  console.log('Success:', data);
+              })
+              .catch((error) => {
+                  console.error('Error:', error);
+              });
+          }
+          function deleteTrack(filename) {
+        if (confirm('Are you sure you want to delete this track?')) {
+            fetch('/delete_track', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    filename: filename
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the track from the DOM
+                    const trackElement = document.querySelector(`.audio-item[data-filename="${filename}"]`);
+                    if (trackElement) {
+                        trackElement.remove();
+                    }
+                    
+                    // If we just deleted the last track or the second-to-last track,
+                    // we need to refresh the page to hide/show the multi-track controls
+                    const remainingTracks = document.querySelectorAll('.audio-item');
+                    if (remainingTracks.length <= 1) {
+                        location.reload();
+                    }
+                } else {
+                    alert('Error deleting track: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the track.');
+            });
+        }
+    }
+          document.addEventListener('DOMContentLoaded', function() {
+            const playAllBtn = document.getElementById('play-all-btn');
+            const stopAllBtn = document.getElementById('stop-all-btn');
+            const volumeMainSlider = document.getElementById('volume-main');
+            const volumeOthersSlider = document.getElementById('volume-others');
+            const audioElements = document.querySelectorAll('audio');
+            let playing = false;
+            
+            // Function to play all audio tracks
+            playAllBtn.addEventListener('click', function() {
+                if (playing) return;
+                
+                const mainTrackElement = document.querySelector('.main-song audio');
+                let mainTrack = null;
+                
+                // Reset all tracks
+                audioElements.forEach(audio => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                });
+                
+                // Find the main track
+                if (mainTrackElement) {
+                    mainTrack = mainTrackElement;
+                    mainTrack.volume = volumeMainSlider.value;
+                }
+                
+                // Set volume for all tracks and play them
+                audioElements.forEach(audio => {
+                    if (audio !== mainTrack) {
+                        audio.volume = volumeOthersSlider.value;
+                    }
+                    
+                    // Use a small timeout to ensure synchronization
+                    setTimeout(() => {
+                        const playPromise = audio.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => {
+                                console.error('Playback failed:', error);
+                            });
+                        }
+                    }, 50);
+                });
+                
+                playing = true;
+            });
+            
+            // Function to stop all audio tracks
+            stopAllBtn.addEventListener('click', function() {
+                audioElements.forEach(audio => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                });
+                playing = false;
+            });
+            
+            // Update volumes in real-time
+            volumeMainSlider.addEventListener('input', function() {
+                const mainTrackElement = document.querySelector('.main-song audio');
+                if (mainTrackElement) {
+                    mainTrackElement.volume = this.value;
+                }
+            });
+            
+            volumeOthersSlider.addEventListener('input', function() {
+                const mainTrackElement = document.querySelector('.main-song audio');
+                audioElements.forEach(audio => {
+                    if (audio !== mainTrackElement) {
+                        audio.volume = this.value;
+                    }
+                });
+            });
+            
+            // Add event listeners to know when tracks end
+            audioElements.forEach(audio => {
+                audio.addEventListener('ended', function() {
+                    // Check if all tracks have ended
+                    let allEnded = true;
+                    audioElements.forEach(a => {
+                        if (!a.ended && !a.paused) {
+                            allEnded = false;
+                        }
+                    });
+                    
+                    if (allEnded) {
+                        playing = false;
+                    }
+                });
+            });
+        });
+    
+    // Function to sync track to main track
+    function syncToMain(filename) {
+        if (!document.querySelector('.main-song')) {
+            alert('Please select a main track first');
+            return;
+        }
+        
+        fetch('/sync_to_main', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                filename: filename
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.new_filename) {
+                    alert(data.message + "\nReloading page to show the new synced track.");
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                alert('Error syncing track: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while syncing the track.');
+        });
+    }
+    
+    // Function to update the pitch adjustment value display
+    function updatePitchValue(index) {
+        const slider = document.getElementById('pitch-' + index);
+        const valueDisplay = document.getElementById('pitch-value-' + index);
+        valueDisplay.textContent = slider.value;
+    }
+    
+    // Function to adjust pitch
+    function adjustPitch(filename, index) {
+        const semitones = document.getElementById('pitch-' + index).value;
+        
+        fetch('/adjust_pitch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                filename: filename,
+                semitones: semitones
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message + "\nReloading page to show the new pitch-adjusted track.");
+                location.reload();
+            } else {
+                alert('Error adjusting pitch: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while adjusting the pitch.');
+        });
+    }
+      </script>
+  {% endif %}
+</body>
+</html>
